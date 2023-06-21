@@ -15,15 +15,16 @@ public class Server {
     void start(int port, int threadsNumber) {
         ExecutorService threadsPool = Executors.newFixedThreadPool(threadsNumber);
         try (final var serverSocket = new ServerSocket(port)) {
-            threadsPool.execute(() -> {
-                while (true) {
-                    try {
-                        acceptRequest(serverSocket);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
+            while (true) {
+                threadsPool.execute(() -> {
+                            try {
+                                acceptRequest(serverSocket);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                );
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
