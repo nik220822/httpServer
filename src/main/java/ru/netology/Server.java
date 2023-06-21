@@ -39,9 +39,6 @@ public class Server {
             // must be in form GET /path HTTP/1.1
             final var requestLine = in.readLine();
             final var parts = requestLine.split(" ");
-//          System.out.println(parts[0]);
-//          System.out.println(parts[1]);
-//          System.out.println(parts[2]);
 
             if (parts.length != 3) {
                 // just close socket
