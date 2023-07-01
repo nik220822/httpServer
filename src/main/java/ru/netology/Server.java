@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 // ОДНОПОТОЧНАЯ ВЕРСИЯ СЕРВЕРА С HANDLES
 public class Server {
     static final int PORT = 9999;
@@ -41,11 +42,6 @@ public class Server {
 // must be in form GET /path HTTP/1.1
             final var requestLine = in.readLine();
             final var parts = requestLine.split(" ");
-
-            if (parts.length != 3) {
-                // just close socket
-                socket.close();
-            }
 
             final var path = parts[1];
             Request request = new Request();
