@@ -2,42 +2,43 @@ package ru.netology;
 
 import java.io.*;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
+// ОДНОПОТОЧНАЯ ВЕРСИЯ СЕРВЕРА С HANDLES
 public class Server {
+    static final int PORT = 9999;
+    static final int TREADSNUMBER = 64;
     final List<String> validPaths = List.of("/index.html", "/spring.svg", "/spring.png", "/resources.html", "/styles.css", "/app.js", "/links.html", "/forms.html", "/classic.html", "/events.html", "/events.js");
+    private ConcurrentHashMap<String, Handler> handlers = new ConcurrentHashMap<>();
 
-    void start(int port, int threadsNumber) {
-        ExecutorService threadsPool = Executors.newFixedThreadPool(threadsNumber);
+    void listen(int port) {
+        final ExecutorService threadPool = Executors.newFixedThreadPool(TREADSNUMBER);
         try (final var serverSocket = new ServerSocket(port)) {
             while (true) {
-                threadsPool.execute(() -> {
-                            try {
-                                acceptRequest(serverSocket);
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                );
+                try {
+                    Socket socket = serverSocket.accept();
+                    acceptRequest(socket);
+                } catch (Exception e) {
+                    throw new Exception(e);
+                }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception ignored) {
         }
     }
 
-    void acceptRequest(ServerSocket serverSocket) throws IOException {
+    void acceptRequest(Socket socket) throws Exception {
         try (
-                final var socket = serverSocket.accept();
                 final var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 final var out = new BufferedOutputStream(socket.getOutputStream());
         ) {
-            // read only request line for simplicity
-            // must be in form GET /path HTTP/1.1
+// read only request line for simplicity
+// must be in form GET /path HTTP/1.1
             final var requestLine = in.readLine();
             final var parts = requestLine.split(" ");
 
@@ -47,6 +48,12 @@ public class Server {
             }
 
             final var path = parts[1];
+            Request request = new Request();
+            request = request.parse(in);
+            String key = request.getRequestLineMethod() + request.getRequestLinePath();
+            Handler handler = handlers.get(key);
+            handler.handle(request, out);
+
             if (!validPaths.contains(path)) {
                 out.write((
                         "HTTP/1.1 404 NotFound\r\n" +
@@ -55,6 +62,7 @@ public class Server {
                                 "\r\n"
                 ).getBytes());
                 out.flush();
+//                socket.close();
             }
 
             final var filePath = Path.of(".", "public", path);
@@ -76,6 +84,7 @@ public class Server {
                 ).getBytes());
                 out.write(content);
                 out.flush();
+//                socket.close();
             }
 
             final var length = Files.size(filePath);
@@ -89,5 +98,9 @@ public class Server {
             Files.copy(filePath, out);
             out.flush();
         }
+    }
+
+    void addHandler(String requestMethod, String path, Handler handler) {
+        handlers.put(requestMethod + path, handler);
     }
 }
