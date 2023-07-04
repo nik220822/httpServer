@@ -11,20 +11,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server {
+    Socket socket;
     final List<String> validPaths = List.of("/index.html", "/spring.svg", "/spring.png", "/resources.html", "/styles.css", "/app.js", "/links.html", "/forms.html", "/classic.html", "/events.html", "/events.js");
 
     void start(int port, int threadsNumber) {
         final ExecutorService threadPool = Executors.newFixedThreadPool(threadsNumber);
         try (final var serverSocket = new ServerSocket(port)) {
+            try {
+                socket = serverSocket.accept();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             while (true) {
                 try {
                     threadPool.execute(() -> {
-                                Socket socket;
-                                try {
-                                    socket = serverSocket.accept();
-                                } catch (Exception e) {
-                                    throw new RuntimeException(e);
-                                }
                                 try {
                                     acceptRequest(socket);
                                 } catch (Exception e) {
@@ -41,7 +41,7 @@ public class Server {
                 }
             }
         } catch (Exception e) {
-            threadPool.shutdown();
+//            threadPool.shutdown();
 //            serverSocket.close();
         }
 //        threadPool.shutdown();
@@ -59,7 +59,7 @@ public class Server {
 
             if (parts.length != 3) {
                 // just close socket
-                socket.close();
+//                socket.close();
             }
 
             final var path = parts[1];
@@ -71,7 +71,7 @@ public class Server {
                                 "\r\n"
                 ).getBytes());
                 out.flush();
-                socket.close();
+//                socket.close();
             }
 
             final var filePath = Path.of(".", "public", path);
@@ -93,7 +93,7 @@ public class Server {
                 ).getBytes());
                 out.write(content);
                 out.flush();
-                socket.close();
+//                socket.close();
             }
 
             final var length = Files.size(filePath);
