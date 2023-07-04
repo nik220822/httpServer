@@ -17,12 +17,12 @@ public class Server {
     void start(int port, int threadsNumber) {
         final ExecutorService threadPool = Executors.newFixedThreadPool(threadsNumber);
         try (final var serverSocket = new ServerSocket(port)) {
-            try {
-                socket = serverSocket.accept();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
             while (true) {
+                try {
+                    socket = serverSocket.accept();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
                 try {
                     threadPool.execute(() -> {
                                 try {
@@ -44,7 +44,6 @@ public class Server {
 //            threadPool.shutdown();
 //            serverSocket.close();
         }
-//        threadPool.shutdown();
     }
 
     void acceptRequest(Socket socket) throws Exception {
