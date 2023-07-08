@@ -16,7 +16,7 @@ public class Main {
             @Override
             public void handle(Request request, BufferedOutputStream out) throws IOException {
                 String requestLinePath = request.getRequestLinePath();
-                final var filePath = Path.of(".", "serverData", requestLinePath);
+                final var filePath = Path.of(".", "public", requestLinePath);
                 final var mimeType = Files.probeContentType(filePath);
                 final var template = Files.readString(filePath);
                 final var content = template.replace(
@@ -41,7 +41,7 @@ public class Main {
                 @Override
                 public void handle(Request request, BufferedOutputStream out) throws IOException {
                     String requestLinePath = request.getRequestLinePath();
-                    final var filePath = Path.of(".", "serverData", requestLinePath);
+                    final var filePath = Path.of(".", "public", requestLinePath);
                     final var mimeType = Files.probeContentType(filePath);
                     final var length = Files.size(filePath);
                     out.write((
