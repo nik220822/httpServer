@@ -1,10 +1,10 @@
 package ru.netology;
 
 public class Main {
-    static final int PORT = 9999;
-    static final int TREADSNUMBER = 64;
 
-    public static void main(String[] args) throws Exception{
-        (new Server()).start(PORT, TREADSNUMBER);
+    public static void main(String[] args) {
+        int port = 9999;
+        int threadsNumber = 64;
+        (new Server(port, threadsNumber)).start();
     }
 }
