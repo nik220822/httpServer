@@ -2,6 +2,7 @@ package ru.netology;
 
 import java.io.*;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -10,43 +11,50 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server {
+    private int port;
+    private int threadsNumber;
     final List<String> validPaths = List.of("/index.html", "/spring.svg", "/spring.png", "/resources.html", "/styles.css", "/app.js", "/links.html", "/forms.html", "/classic.html", "/events.html", "/events.js");
 
-    void start(int port, int threadsNumber) {
-        ExecutorService threadsPool = Executors.newFixedThreadPool(threadsNumber);
+    Server(int port, int threadsNumber) {
+        this.port = port;
+        this.threadsNumber = threadsNumber;
+    }
+
+    void start() {
         try (final var serverSocket = new ServerSocket(port)) {
+            ExecutorService threadPool = Executors.newFixedThreadPool(threadsNumber);
+
             while (true) {
-                threadsPool.execute(() -> {
-                            try {
-                                acceptRequest(serverSocket);
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
+                try {
+                    final var socket = serverSocket.accept();
+                    threadPool.submit(() -> {
+                        try {
+                            acceptRequest(socket);
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                );
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    void acceptRequest(ServerSocket serverSocket) throws IOException {
+    void acceptRequest(Socket socket) throws Exception {
         try (
-                final var socket = serverSocket.accept();
                 final var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 final var out = new BufferedOutputStream(socket.getOutputStream());
         ) {
-            // read only request line for simplicity
-            // must be in form GET /path HTTP/1.1
             final var requestLine = in.readLine();
             final var parts = requestLine.split(" ");
+            final var path = parts[1];
 
             if (parts.length != 3) {
-                // just close socket
                 socket.close();
             }
-
-            final var path = parts[1];
             if (!validPaths.contains(path)) {
                 out.write((
                         "HTTP/1.1 404 NotFound\r\n" +
@@ -55,12 +63,11 @@ public class Server {
                                 "\r\n"
                 ).getBytes());
                 out.flush();
+                socket.close();
             }
-
             final var filePath = Path.of(".", "public", path);
             final var mimeType = Files.probeContentType(filePath);
-
-            // special case for classic
+            final var length = Files.size(filePath);
             if (path.equals("/classic.html")) {
                 final var template = Files.readString(filePath);
                 final var content = template.replace(
@@ -76,9 +83,9 @@ public class Server {
                 ).getBytes());
                 out.write(content);
                 out.flush();
+                socket.close();
             }
 
-            final var length = Files.size(filePath);
             out.write((
                     "HTTP/1.1 200 OK\r\n" +
                             "Content-Type: " + mimeType + "\r\n" +
